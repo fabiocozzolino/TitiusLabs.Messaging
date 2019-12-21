@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace TitiusLabs.Messaging
 {
-    public sealed class MessageBus : IMessageBus
+    public sealed class MessageBus
     {
-        private static IMessageBus current;
+        private static MessageBus current;
         private static readonly object syncObj = new object();
-        public static IMessageBus Current
+        public static MessageBus Current
         {
             get
             {
@@ -19,7 +16,7 @@ namespace TitiusLabs.Messaging
                     {
                         if (current == null)
                         {
-                            current = new MessageBus();
+                            current = new MessageBus(new MessageBusImpl());
                         }
                     }
                 }
@@ -28,63 +25,21 @@ namespace TitiusLabs.Messaging
             }
         }
 
-        private bool isRunning;
-        private readonly Queue<IMessage> messages = new Queue<IMessage>();
-        private readonly IDictionary<Type, List<Tuple<Delegate, TaskScheduler>>> subscribers = new Dictionary<Type, List<Tuple<Delegate, TaskScheduler>>>();
+        private readonly MessageBusImpl messageBusImpl;
+
+        private MessageBus(MessageBusImpl messageBusImpl)
+        {
+            this.messageBusImpl = messageBusImpl;
+        }
 
         public void Subscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
         {
-            if (!subscribers.ContainsKey(typeof(TMessage)))
-            {
-                subscribers[typeof(TMessage)] = new List<Tuple<Delegate, TaskScheduler>>();
-            }
-
-            TaskScheduler scheduler = null;
-            if (SynchronizationContext.Current != null)
-            {
-                scheduler = TaskScheduler.FromCurrentSynchronizationContext();
-            }
-
-            subscribers[typeof(TMessage)].Add(Tuple.Create((Delegate)subscriber, scheduler));
+            messageBusImpl.Subscribe(subscriber);
         }
 
         public void Post<TMessage>(TMessage message) where TMessage : IMessage
         {
-            messages.Enqueue(message);
-            Task.Run(ProcessQueue);
-        }
-
-        private void ProcessQueue()
-        {
-            if (isRunning)
-                return;
-            
-            while (true)
-            {
-                isRunning = true;
-
-                var message = messages.Dequeue();
-                foreach (var subscriber in subscribers[message.GetType()])
-                {
-                    if (subscriber.Item2 != null)
-                    {
-                        Task.Factory.StartNew(() =>
-                        {
-                            subscriber.Item1.DynamicInvoke(message);
-                        }, CancellationToken.None, TaskCreationOptions.None, subscriber.Item2);
-                    }
-                    else
-                    {
-                        subscriber.Item1.DynamicInvoke(message);
-                    }
-                }
-
-                if (messages.Count == 0)
-                {
-                    isRunning = false;
-                    break;
-                }
-            }
+            messageBusImpl.Post(message);
         }
     }
 }
