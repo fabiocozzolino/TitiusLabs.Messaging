@@ -1,0 +1,36 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29411.108
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TitiusLabs.Messaging", "TitiusLabs.Messaging\TitiusLabs.Messaging.csproj", "{0DE6AFD4-4910-4DF5-AB98-A16E391E2725}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TitiusLabs.Messaging.Test", "TitiusLabs.Messaging.Test\TitiusLabs.Messaging.Test.csproj", "{5619772B-EC12-4FBE-BA17-58A6F00D4A95}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TitiusLabs.Messaging.Samples.WPF", "TitiusLabs.Messaging.Samples.WPF\TitiusLabs.Messaging.Samples.WPF.csproj", "{CFFD9CD7-05BB-48CD-B532-9B3C1536D65E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0DE6AFD4-4910-4DF5-AB98-A16E391E2725}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DE6AFD4-4910-4DF5-AB98-A16E391E2725}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DE6AFD4-4910-4DF5-AB98-A16E391E2725}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DE6AFD4-4910-4DF5-AB98-A16E391E2725}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5619772B-EC12-4FBE-BA17-58A6F00D4A95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5619772B-EC12-4FBE-BA17-58A6F00D4A95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5619772B-EC12-4FBE-BA17-58A6F00D4A95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5619772B-EC12-4FBE-BA17-58A6F00D4A95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFFD9CD7-05BB-48CD-B532-9B3C1536D65E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFFD9CD7-05BB-48CD-B532-9B3C1536D65E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFFD9CD7-05BB-48CD-B532-9B3C1536D65E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFFD9CD7-05BB-48CD-B532-9B3C1536D65E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {11BD2847-8212-4591-A429-4D4943D5DF8C}
+	EndGlobalSection
+EndGlobal

@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:TitiusLabs.Messaging.Samples.WPF"
         mc:Ignorable="d" Loaded="Window_Loaded"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
+    <StackPanel Orientation="Vertical">
         <Label x:Name="label1">test</Label>
-    </Grid>
+        <Label x:Name="label2">test</Label>
+    </StackPanel>
 </Window>

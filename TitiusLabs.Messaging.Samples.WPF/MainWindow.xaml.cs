@@ -32,15 +32,47 @@ namespace TitiusLabs.Messaging.Samples.WPF
             {
                 label1.Content = message.Timestamp;
             });
+            MessageBus.Current.Subscribe((TimeMessage message) =>
+            {
+                label2.Content = message.Timestamp;
+            });
+            MessageBus.Current.Subscribe((TextMessage message) =>
+            {
+                label2.Content = message.Text;
+            });
 
             Task.Run(async () =>
             {
                 while (true)
                 {
-                    await Task.Delay(1000);
+                    await Task.Delay(3000);
                     MessageBus.Current.Post(new TimeMessage
                     {
                         Timestamp = DateTime.Now.ToString()
+                    });
+                }
+            });
+
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    await Task.Delay(5000);
+                    MessageBus.Current.Post(new TextMessage
+                    {
+                        Text = "Hi, Fabio"
+                    });
+                }
+            });
+
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    await Task.Delay(8000);
+                    MessageBus.Current.Post(new TimeMessage
+                    {
+                        Timestamp = "Hi, All"
                     });
                 }
             });
@@ -49,6 +81,11 @@ namespace TitiusLabs.Messaging.Samples.WPF
         public class TimeMessage : IMessage
         {
             public string Timestamp { get; set; }
+        }
+
+        public class TextMessage : IMessage
+        {
+            public string Text { get; set; }
         }
     }
 }
