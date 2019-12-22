@@ -83,6 +83,7 @@ namespace TitiusLabs.Messaging
             {
                 // wait for signals
                 waitHandler.WaitOne();
+                waitHandler.Reset();
 
                 while (true)
                 {
