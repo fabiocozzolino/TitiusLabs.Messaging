@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,61 +8,97 @@ namespace TitiusLabs.Messaging
 {
     internal class MessageBusImpl : IMessageBus
     {
-        private bool isRunning;
+        private readonly EventWaitHandle waitHandler = new EventWaitHandle(false, EventResetMode.ManualReset);
         private readonly Queue<IMessage> messages = new Queue<IMessage>();
         private readonly IDictionary<Type, List<Tuple<Delegate, TaskScheduler>>> subscribers = new Dictionary<Type, List<Tuple<Delegate, TaskScheduler>>>();
 
+        public MessageBusImpl()
+        {
+            Initialize();
+        }
+
+        private void Initialize()
+        {
+            // start the messaging process
+            Task.Run(ProcessMessages);
+        }
+
         public void Subscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
         {
-            if (!subscribers.ContainsKey(typeof(TMessage)))
+            var messageType = typeof(TMessage);
+            if (!subscribers.ContainsKey(messageType))
             {
-                subscribers[typeof(TMessage)] = new List<Tuple<Delegate, TaskScheduler>>();
+                subscribers[messageType] = new List<Tuple<Delegate, TaskScheduler>>();
             }
 
-            TaskScheduler scheduler = null;
-            if (SynchronizationContext.Current != null)
+            // retrieve the synchronizationcontext to invoke subscriber in their context
+            TaskScheduler scheduler = SynchronizationContext.Current != null
+                ? TaskScheduler.FromCurrentSynchronizationContext()
+                : TaskScheduler.Default;
+
+            // add subscriber to list
+            subscribers[messageType].Add(Tuple.Create((Delegate)subscriber, scheduler));
+        }
+
+        public void UnSubscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
+        {
+            var messageType = typeof(TMessage);
+            if (!subscribers.ContainsKey(messageType))
             {
-                scheduler = TaskScheduler.FromCurrentSynchronizationContext();
+                return;
             }
 
-            subscribers[typeof(TMessage)].Add(Tuple.Create((Delegate)subscriber, scheduler));
+            // remove the single subscriber
+            var messageSubscribers = subscribers[messageType];
+            var subscriberItem = messageSubscribers.FirstOrDefault(s => s.Item1.Equals(subscriber));
+            messageSubscribers.Remove(subscriberItem);
+
+            // check if any then remove the key
+            if (!messageSubscribers.Any())
+            {
+                subscribers.Remove(messageType);
+            }
+        }
+
+        public void UnSubscribeAll<TMessage>() where TMessage : IMessage
+        {
+            var messageType = typeof(TMessage);
+            if (!subscribers.ContainsKey(messageType))
+            {
+                return;
+            }
+
+            subscribers.Remove(messageType);
         }
 
         public void Post<TMessage>(TMessage message) where TMessage : IMessage
         {
             messages.Enqueue(message);
-            Task.Run(ProcessQueue);
+            waitHandler.Set();
         }
 
-        private void ProcessQueue()
+        private void ProcessMessages()
         {
-            if (isRunning)
-                return;
-
             while (true)
             {
-                isRunning = true;
+                // wait for signals
+                waitHandler.WaitOne();
 
-                var message = messages.Dequeue();
-                foreach (var subscriber in subscribers[message.GetType()])
+                while (true)
                 {
-                    if (subscriber.Item2 != null)
+                    if (!messages.Any())
+                    {
+                        break;
+                    }
+
+                    var message = messages.Dequeue();
+                    foreach (var subscriber in subscribers[message.GetType()])
                     {
                         Task.Factory.StartNew(() =>
                         {
                             subscriber.Item1.DynamicInvoke(message);
                         }, CancellationToken.None, TaskCreationOptions.None, subscriber.Item2);
                     }
-                    else
-                    {
-                        subscriber.Item1.DynamicInvoke(message);
-                    }
-                }
-
-                if (messages.Count == 0)
-                {
-                    isRunning = false;
-                    break;
                 }
             }
         }

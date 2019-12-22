@@ -16,17 +16,38 @@ public partial class MainWindow : Gtk.Window
 
         MessageBus.Current.Subscribe((TimeMessage message) =>
         {
+            Console.WriteLine($"    RECEIVED {message.Timestamp} TO {nameof(label1)}");
             label1.Text = message.Timestamp;
+        });
+
+        MessageBus.Current.Subscribe((TimeMessage message) =>
+        {
+            Console.WriteLine($"    RECEIVED {message.Timestamp} TO {nameof(label3)}");
+            label3.Text = message.Timestamp;
         });
 
         Task.Run(async () =>
         {
             while(true)
             {
-                await Task.Delay(1000);
+                await Task.Delay(10000);
                 MessageBus.Current.Post(new TimeMessage
                 {
                     Timestamp = DateTime.Now.ToString()
+                });
+            }
+        });
+
+        
+        Task.Run(async () =>
+        {
+            await Task.Delay(5000);
+            while (true)
+            {
+                await Task.Delay(10000);
+                MessageBus.Current.Post(new TimeMessage
+                {
+                    Timestamp = "Hi"
                 });
             }
         });
@@ -41,5 +62,10 @@ public partial class MainWindow : Gtk.Window
     public class TimeMessage : IMessage
     {
         public string Timestamp { get; set; }
+
+        public override string ToString()
+        {
+            return "TimeMessage: " + Timestamp;
+        }
     }
 }

@@ -4,8 +4,10 @@ namespace TitiusLabs.Messaging
 {
     public sealed class MessageBus
     {
-        private static MessageBus current;
         private static readonly object syncObj = new object();
+        private static MessageBus current;
+        private readonly MessageBusImpl messageBusImpl;
+
         public static MessageBus Current
         {
             get
@@ -25,7 +27,6 @@ namespace TitiusLabs.Messaging
             }
         }
 
-        private readonly MessageBusImpl messageBusImpl;
 
         private MessageBus(MessageBusImpl messageBusImpl)
         {
@@ -35,6 +36,11 @@ namespace TitiusLabs.Messaging
         public void Subscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
         {
             messageBusImpl.Subscribe(subscriber);
+        }
+
+        public void UnSubscribeAll<TMessage>() where TMessage : IMessage
+        {
+            messageBusImpl.UnSubscribeAll<TMessage>();
         }
 
         public void Post<TMessage>(TMessage message) where TMessage : IMessage

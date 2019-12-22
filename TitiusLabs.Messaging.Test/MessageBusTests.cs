@@ -1,4 +1,5 @@
 using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace TitiusLabs.Messaging.Test
@@ -18,20 +19,44 @@ namespace TitiusLabs.Messaging.Test
         [Test]
         public void Post_OneSubscriber_Called()
         {
-            bool done = false;
+            var tcs = new TaskCompletionSource<bool>();
             MessageBus.Current.Subscribe((SimpleMessaging sm) =>
             {
-                done = true;
+                tcs.SetResult(true);
             });
 
             MessageBus.Current.Post(new SimpleMessaging());
 
-            while(!done)
-            {
-                Thread.Sleep(1000);
-            }
+            var result = tcs.Task.Result;
 
-            Assert.Pass();
+            MessageBus.Current.UnSubscribeAll<SimpleMessaging>();
+
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void Post_MultipleSubscriber_Called()
+        {
+            var tcs1 = new TaskCompletionSource<bool>();
+            var tcs2 = new TaskCompletionSource<bool>();
+
+            MessageBus.Current.Subscribe((SimpleMessaging sm) =>
+            {
+                tcs1.SetResult(true);
+            });
+            MessageBus.Current.Subscribe((SimpleMessaging sm) =>
+            {
+                tcs2.SetResult(true);
+            });
+
+            MessageBus.Current.Post(new SimpleMessaging());
+
+            var result1 = tcs1.Task.Result;
+            var result2 = tcs2.Task.Result;
+
+            MessageBus.Current.UnSubscribeAll<SimpleMessaging>();
+
+            Assert.IsTrue(result1 && result2);
         }
     }
 }
