@@ -35,7 +35,12 @@ namespace TitiusLabs.Messaging
 
         public void Subscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
         {
-            messageBusImpl.Subscribe(subscriber);
+            Subscribe(subscriber, null);
+        }
+
+        public void Subscribe<TMessage>(Action<TMessage> subscriber, Func<TMessage, bool> filter) where TMessage : IMessage
+        {
+            messageBusImpl.Subscribe(subscriber, filter);
         }
 
         public void UnSubscribeAll<TMessage>() where TMessage : IMessage
@@ -45,7 +50,7 @@ namespace TitiusLabs.Messaging
 
         public void Post<TMessage>(TMessage message) where TMessage : IMessage
         {
-            messageBusImpl.Post(message);
+            messageBusImpl.Publish(message);
         }
     }
 }

@@ -8,7 +8,7 @@ namespace TitiusLabs.Messaging.Test
     {
         public class SimpleMessage : IMessage
         {
-
+            public bool Active { get; set; }
         }
 
         public class AnotherSimpleMessage : IMessage
@@ -96,6 +96,36 @@ namespace TitiusLabs.Messaging.Test
 
             Assert.IsTrue(result1 && result2);
             Assert.IsTrue(count1 == 1 && count2 == 1);
+        }
+
+        [Test]
+        public void Subscribe_SameMessageWithDifferentFilter_CalledOnce()
+        {
+            var tcs1 = new TaskCompletionSource<bool>();
+            var tcs2 = new TaskCompletionSource<bool>();
+            var count1 = 0;
+            var count2 = 0;
+            MessageBus.Current.Subscribe((SimpleMessage sm) =>
+            {
+                count1++;
+                tcs1.SetResult(true);
+            });
+            MessageBus.Current.Subscribe((SimpleMessage sm) =>
+            {
+                count2++;
+                tcs2.SetResult(true);
+            }, (sm) => sm.Active);
+
+            MessageBus.Current.Post(new SimpleMessage() { Active = true });
+            MessageBus.Current.Post(new SimpleMessage() { Active = false }); ;
+
+            var result1 = tcs1.Task.Result;
+            var result2 = tcs2.Task.Result;
+
+            MessageBus.Current.UnSubscribeAll<SimpleMessage>();
+
+            Assert.IsTrue(result1 && result2);
+            Assert.IsTrue(count1 == 2 && count2 == 1);
         }
     }
 }

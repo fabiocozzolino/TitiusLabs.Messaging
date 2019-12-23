@@ -10,7 +10,7 @@ namespace TitiusLabs.Messaging
     {
         private readonly EventWaitHandle waitHandler = new EventWaitHandle(false, EventResetMode.ManualReset);
         private readonly Queue<IMessage> messages = new Queue<IMessage>();
-        private readonly IDictionary<Type, List<Tuple<Delegate, TaskScheduler>>> subscribers = new Dictionary<Type, List<Tuple<Delegate, TaskScheduler>>>();
+        private readonly IDictionary<Type, List<MessageSubscription>> messageSubscriptions = new Dictionary<Type, List<MessageSubscription>>();
 
         public MessageBusImpl()
         {
@@ -25,10 +25,15 @@ namespace TitiusLabs.Messaging
 
         public void Subscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
         {
+            Subscribe(subscriber, null);
+        }
+
+        public void Subscribe<TMessage>(Action<TMessage> subscriber, Func<TMessage, bool> filter) where TMessage : IMessage
+        {
             var messageType = typeof(TMessage);
-            if (!subscribers.ContainsKey(messageType))
+            if (!messageSubscriptions.ContainsKey(messageType))
             {
-                subscribers[messageType] = new List<Tuple<Delegate, TaskScheduler>>();
+                messageSubscriptions[messageType] = new List<MessageSubscription>();
             }
 
             // retrieve the synchronizationcontext to invoke subscriber in their context
@@ -37,41 +42,43 @@ namespace TitiusLabs.Messaging
                 : TaskScheduler.Default;
 
             // add subscriber to list
-            subscribers[messageType].Add(Tuple.Create((Delegate)subscriber, scheduler));
+            messageSubscriptions[messageType].Add(MessageSubscription.Create<TMessage>(subscriber, filter, scheduler));
         }
 
         public void UnSubscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
         {
             var messageType = typeof(TMessage);
-            if (!subscribers.ContainsKey(messageType))
+            if (!messageSubscriptions.ContainsKey(messageType))
             {
                 return;
             }
 
             // remove the single subscriber
-            var messageSubscribers = subscribers[messageType];
-            var subscriberItem = messageSubscribers.FirstOrDefault(s => s.Item1.Equals(subscriber));
+            var messageSubscribers = messageSubscriptions[messageType];
+            var subscriberItem = messageSubscribers
+                .OfType<MessageSubscription<TMessage>>()
+                .FirstOrDefault(s => s.Subscriber.Equals(subscriber));
             messageSubscribers.Remove(subscriberItem);
 
             // check if any then remove the key
             if (!messageSubscribers.Any())
             {
-                subscribers.Remove(messageType);
+                messageSubscriptions.Remove(messageType);
             }
         }
 
         public void UnSubscribeAll<TMessage>() where TMessage : IMessage
         {
             var messageType = typeof(TMessage);
-            if (!subscribers.ContainsKey(messageType))
+            if (!messageSubscriptions.ContainsKey(messageType))
             {
                 return;
             }
 
-            subscribers.Remove(messageType);
+            messageSubscriptions.Remove(messageType);
         }
 
-        public void Post<TMessage>(TMessage message) where TMessage : IMessage
+        public void Publish<TMessage>(TMessage message) where TMessage : IMessage
         {
             messages.Enqueue(message);
             waitHandler.Set();
@@ -87,18 +94,19 @@ namespace TitiusLabs.Messaging
 
                 while (true)
                 {
+                    // check if any messages to dequeue
                     if (!messages.Any())
                     {
                         break;
                     }
 
                     var message = messages.Dequeue();
-                    foreach (var subscriber in subscribers[message.GetType()])
+                    foreach (var messageSubscription in messageSubscriptions[message.GetType()])
                     {
                         Task.Factory.StartNew(() =>
                         {
-                            subscriber.Item1.DynamicInvoke(message);
-                        }, CancellationToken.None, TaskCreationOptions.None, subscriber.Item2);
+                            messageSubscription.Invoke(message);
+                        }, CancellationToken.None, TaskCreationOptions.None, messageSubscription.Scheduler);
                     }
                 }
             }
