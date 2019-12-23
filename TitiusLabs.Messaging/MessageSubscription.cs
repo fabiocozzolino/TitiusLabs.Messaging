@@ -16,6 +16,7 @@ namespace TitiusLabs.Messaging
         }
 
         public TaskScheduler Scheduler { get; set; }
+
         public virtual void Invoke(IMessage message)
         {
 

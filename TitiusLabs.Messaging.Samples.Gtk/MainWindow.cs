@@ -16,14 +16,17 @@ public partial class MainWindow : Gtk.Window
 
         MessageBus.Current.Subscribe((TimeMessage message) =>
         {
-            Console.WriteLine($"    RECEIVED {message.Timestamp} TO {nameof(label1)}");
             label1.Text = message.Timestamp;
         });
 
         MessageBus.Current.Subscribe((TimeMessage message) =>
         {
-            Console.WriteLine($"    RECEIVED {message.Timestamp} TO {nameof(label3)}");
             label3.Text = message.Timestamp;
+        });
+
+        MessageBus.Current.Subscribe((AnotherMessage message) =>
+        {
+            label5.Text = label3.Text = message.Text;
         });
 
         Task.Run(async () =>
@@ -37,7 +40,6 @@ public partial class MainWindow : Gtk.Window
                 });
             }
         });
-
         
         Task.Run(async () =>
         {
@@ -48,6 +50,19 @@ public partial class MainWindow : Gtk.Window
                 MessageBus.Current.Post(new TimeMessage
                 {
                     Timestamp = "Hi"
+                });
+            }
+        });
+
+        Task.Run(async () =>
+        {
+            await Task.Delay(5000);
+            while (true)
+            {
+                await Task.Delay(4000);
+                MessageBus.Current.Post(new AnotherMessage
+                {
+                    Text = "Hi, Fabio " + DateTime.Now
                 });
             }
         });
@@ -65,7 +80,17 @@ public partial class MainWindow : Gtk.Window
 
         public override string ToString()
         {
-            return "TimeMessage: " + Timestamp;
+            return $"{nameof(TimeMessage)}: {Timestamp}";
+        }
+    }
+
+    public class AnotherMessage : IMessage
+    {
+        public string Text { get; set; }
+
+        public override string ToString()
+        {
+            return $"{nameof(AnotherMessage)}: {Text}";
         }
     }
 }
