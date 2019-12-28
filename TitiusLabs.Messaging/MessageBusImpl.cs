@@ -23,12 +23,12 @@ namespace TitiusLabs.Messaging
             Task.Run(ProcessMessages);
         }
 
-        public void Subscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
+        public ISubscriptionToken Subscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
         {
-            Subscribe(subscriber, null);
+            return Subscribe(subscriber, null);
         }
 
-        public void Subscribe<TMessage>(Action<TMessage> subscriber, Func<TMessage, bool> filter) where TMessage : IMessage
+        public ISubscriptionToken Subscribe<TMessage>(Action<TMessage> subscriber, Func<TMessage, bool> filter) where TMessage : IMessage
         {
             var messageType = typeof(TMessage);
             if (!messageSubscriptions.ContainsKey(messageType))
@@ -42,7 +42,33 @@ namespace TitiusLabs.Messaging
                 : TaskScheduler.Default;
 
             // add subscriber to list
-            messageSubscriptions[messageType].Add(MessageSubscription.Create<TMessage>(subscriber, filter, scheduler));
+            var messageSubscription = MessageSubscription.Create(subscriber, filter, scheduler);
+            messageSubscription.SubscriptionToken = new SubscriptionToken(this, messageType);
+            messageSubscriptions[messageType].Add(messageSubscription);
+
+            return messageSubscription.SubscriptionToken;
+        }
+
+        public void UnSubscribe(ISubscriptionToken subscriptionToken)
+        {
+            Type messageType = subscriptionToken.MessageType;
+            if (!messageSubscriptions.ContainsKey(messageType))
+            {
+                return;
+            }
+
+            // remove the single subscriber
+            var messageSubscribers = messageSubscriptions[messageType];
+            var subscriberItem = messageSubscribers
+                .OfType<MessageSubscription>()
+                .FirstOrDefault(s => s.SubscriptionToken.Equals(subscriptionToken));
+            messageSubscribers.Remove(subscriberItem);
+
+            // check if any then remove the key
+            if (!messageSubscribers.Any())
+            {
+                messageSubscriptions.Remove(messageType);
+            }
         }
 
         public void UnSubscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage

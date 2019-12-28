@@ -127,5 +127,27 @@ namespace TitiusLabs.Messaging.Test
             Assert.IsTrue(result1 && result2);
             Assert.IsTrue(count1 == 2 && count2 == 1);
         }
+
+        [Test]
+        public void UnSubscribe_UsingSubscriptionToken_NotInvokedAfter()
+        {
+            var tcs1 = new TaskCompletionSource<bool>();
+            var count1 = 0;
+            bool result1 = false;
+
+            using (var token = MessageBus.Current.Subscribe((SimpleMessage sm) =>
+                {
+                    count1++;
+                    tcs1.SetResult(true);
+                }))
+            {
+
+                MessageBus.Current.Post(new SimpleMessage());
+                result1 = tcs1.Task.Result;
+            }
+
+            Assert.IsTrue(result1);
+            Assert.AreEqual(count1, 1);
+        }
     }
 }

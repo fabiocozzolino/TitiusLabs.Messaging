@@ -15,6 +15,8 @@ namespace TitiusLabs.Messaging
             };
         }
 
+        public ISubscriptionToken SubscriptionToken { get; set; }
+
         public TaskScheduler Scheduler { get; set; }
 
         public virtual void Invoke(IMessage message)
