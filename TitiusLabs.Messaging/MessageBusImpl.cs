@@ -9,8 +9,16 @@ namespace TitiusLabs.Messaging
     internal class MessageBusImpl : IMessageBus
     {
         private readonly EventWaitHandle waitHandler = new EventWaitHandle(false, EventResetMode.ManualReset);
-        private readonly Queue<IMessage> messages = new Queue<IMessage>();
+        private readonly Queue<IMessage> messageQueue = new Queue<IMessage>();
+        private readonly Queue<IMessage> deadMessageQueue = new Queue<IMessage>();
         private readonly IDictionary<Type, List<MessageSubscription>> messageSubscriptions = new Dictionary<Type, List<MessageSubscription>>();
+
+        protected virtual void OnPublishException(PublishExceptionEventArgs e)
+        {
+            PublishException?.Invoke(this, e);
+        }
+
+        public event EventHandler<PublishExceptionEventArgs> PublishException;
 
         public MessageBusImpl()
         {
@@ -49,7 +57,7 @@ namespace TitiusLabs.Messaging
             return messageSubscription.SubscriptionToken;
         }
 
-        public void UnSubscribe(ISubscriptionToken subscriptionToken)
+        public void Unsubscribe(ISubscriptionToken subscriptionToken)
         {
             Type messageType = subscriptionToken.MessageType;
             if (!messageSubscriptions.ContainsKey(messageType))
@@ -71,7 +79,7 @@ namespace TitiusLabs.Messaging
             }
         }
 
-        public void UnSubscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
+        public void Unsubscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
         {
             var messageType = typeof(TMessage);
             if (!messageSubscriptions.ContainsKey(messageType))
@@ -93,7 +101,7 @@ namespace TitiusLabs.Messaging
             }
         }
 
-        public void UnSubscribeAll<TMessage>() where TMessage : IMessage
+        public void UnsubscribeAll<TMessage>() where TMessage : IMessage
         {
             var messageType = typeof(TMessage);
             if (!messageSubscriptions.ContainsKey(messageType))
@@ -106,7 +114,7 @@ namespace TitiusLabs.Messaging
 
         public void Publish<TMessage>(TMessage message) where TMessage : IMessage
         {
-            messages.Enqueue(message);
+            messageQueue.Enqueue(message);
             waitHandler.Set();
         }
 
@@ -121,18 +129,28 @@ namespace TitiusLabs.Messaging
                 while (true)
                 {
                     // check if any messages to dequeue
-                    if (!messages.Any())
+                    if (!messageQueue.Any())
                     {
                         break;
                     }
 
-                    var message = messages.Dequeue();
+                    var message = messageQueue.Dequeue();
                     foreach (var messageSubscription in messageSubscriptions[message.GetType()])
                     {
-                        Task.Factory.StartNew(() =>
-                        {
-                            messageSubscription.Invoke(message);
-                        }, CancellationToken.None, TaskCreationOptions.None, messageSubscription.Scheduler);
+                        Task.Factory
+                            .StartNew(() =>
+                            {
+                                messageSubscription.Dispatch(message);
+                            }, CancellationToken.None, TaskCreationOptions.None, messageSubscription.Scheduler)
+                            .ContinueWith((task) =>
+                            {
+                                OnPublishException(new PublishExceptionEventArgs
+                                {
+                                    Exception = task.Exception,
+                                    Message = message,
+                                    SubscriberType = messageSubscription.GetSubscriberType()
+                                });
+                            }, TaskContinuationOptions.OnlyOnFaulted);
                     }
                 }
             }

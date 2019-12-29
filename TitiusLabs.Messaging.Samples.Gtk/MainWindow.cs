@@ -34,7 +34,7 @@ public partial class MainWindow : Gtk.Window
             while(true)
             {
                 await Task.Delay(10000);
-                MessageBus.Current.Post(new TimeMessage
+                MessageBus.Current.Publish(new TimeMessage
                 {
                     Timestamp = DateTime.Now.ToString()
                 });
@@ -47,7 +47,7 @@ public partial class MainWindow : Gtk.Window
             while (true)
             {
                 await Task.Delay(10000);
-                MessageBus.Current.Post(new TimeMessage
+                MessageBus.Current.Publish(new TimeMessage
                 {
                     Timestamp = "Hi"
                 });
@@ -60,7 +60,7 @@ public partial class MainWindow : Gtk.Window
             while (true)
             {
                 await Task.Delay(4000);
-                MessageBus.Current.Post(new AnotherMessage
+                MessageBus.Current.Publish(new AnotherMessage
                 {
                     Text = "Hi, Fabio " + DateTime.Now
                 });
@@ -74,7 +74,7 @@ public partial class MainWindow : Gtk.Window
         a.RetVal = true;
     }
 
-    public class TimeMessage : IMessage
+    public class TimeMessage : MessageBase
     {
         public string Timestamp { get; set; }
 
@@ -84,7 +84,7 @@ public partial class MainWindow : Gtk.Window
         }
     }
 
-    public class AnotherMessage : IMessage
+    public class AnotherMessage : MessageBase
     {
         public string Text { get; set; }
 

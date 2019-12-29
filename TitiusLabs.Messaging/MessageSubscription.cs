@@ -1,17 +1,18 @@
 ﻿using System;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace TitiusLabs.Messaging
 {
-    internal class MessageSubscription
+    internal abstract class MessageSubscription
     {
         public static MessageSubscription<TMessage> Create<TMessage>(Action<TMessage> subscriber, Func<TMessage, bool> filter, TaskScheduler scheduler) where TMessage : IMessage
         {
             return new MessageSubscription<TMessage>
             {
-                Subscriber = subscriber,
+                Subscriber = new WeakReference<Action<TMessage>>(subscriber),
                 Scheduler = scheduler,
-                Filter = filter
+                Filter = new WeakReference<Func<TMessage, bool>>(filter)
             };
         }
 
@@ -19,25 +20,29 @@ namespace TitiusLabs.Messaging
 
         public TaskScheduler Scheduler { get; set; }
 
-        public virtual void Invoke(IMessage message)
-        {
-
-        }
+        public abstract void Dispatch(IMessage message);
+        internal abstract MethodInfo GetSubscriberType();
     }
 
     internal class MessageSubscription<TMessage> : MessageSubscription where TMessage : IMessage
     {
-        public Action<TMessage> Subscriber { get; set; }
-        public Func<TMessage, bool> Filter { get; set; }
-        public override void Invoke(IMessage message)
+        public WeakReference<Action<TMessage>> Subscriber { get; set; }
+        public WeakReference<Func<TMessage, bool>> Filter { get; set; }
+
+        public override void Dispatch(IMessage message)
         {
-            base.Invoke(message);
+            Filter.TryGetTarget(out var filter);
 
             var typedMessage = (TMessage)message;
-            if (Filter?.Invoke(typedMessage) ?? true)
+            if ((filter?.Invoke(typedMessage) ?? true) && Subscriber.TryGetTarget(out var subscriber))
             {
-                Subscriber.Invoke(typedMessage);
+                subscriber.Invoke(typedMessage);
             }
+        }
+
+        internal override MethodInfo GetSubscriberType()
+        {
+            return Subscriber.TryGetTarget(out var target) ? target.Method : null;
         }
     }
 }

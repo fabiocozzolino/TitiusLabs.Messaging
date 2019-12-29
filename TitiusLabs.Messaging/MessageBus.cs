@@ -43,22 +43,22 @@ namespace TitiusLabs.Messaging
             return messageBusImpl.Subscribe(subscriber, filter);
         }
 
-        public void UnSubscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
+        public void Unsubscribe<TMessage>(Action<TMessage> subscriber) where TMessage : IMessage
         {
-            messageBusImpl.UnSubscribe(subscriber);
+            messageBusImpl.Unsubscribe(subscriber);
         }
 
-        public void UnSubscribe(ISubscriptionToken subscriptionToken)
+        public void Unsubscribe(ISubscriptionToken subscriptionToken)
         {
-            messageBusImpl.UnSubscribe(subscriptionToken);
+            messageBusImpl.Unsubscribe(subscriptionToken);
         }
 
-        public void UnSubscribeAll<TMessage>() where TMessage : IMessage
+        public void UnsubscribeAll<TMessage>() where TMessage : IMessage
         {
-            messageBusImpl.UnSubscribeAll<TMessage>();
+            messageBusImpl.UnsubscribeAll<TMessage>();
         }
 
-        public void Post<TMessage>(TMessage message) where TMessage : IMessage
+        public void Publish<TMessage>(TMessage message) where TMessage : IMessage
         {
             messageBusImpl.Publish(message);
         }

@@ -23,7 +23,7 @@ namespace TitiusLabs.Messaging
         {
             if (bus != null)
             {
-                bus.UnSubscribe(this);
+                bus.Unsubscribe(this);
             }
         }
     }

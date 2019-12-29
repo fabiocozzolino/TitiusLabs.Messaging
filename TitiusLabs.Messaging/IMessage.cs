@@ -2,6 +2,6 @@
 {
     public interface IMessage
     {
-
+        int Retry { get; set; }
     }
 }
