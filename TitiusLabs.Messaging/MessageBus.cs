@@ -4,29 +4,17 @@ namespace TitiusLabs.Messaging
 {
     public sealed class MessageBus
     {
-        private static readonly object syncObj = new object();
-        private static MessageBus current;
         private readonly MessageBusImpl messageBusImpl;
+
+        private static readonly Lazy<MessageBus> instance = new Lazy<MessageBus>(() => new MessageBus(new MessageBusImpl()));
 
         public static MessageBus Current
         {
             get
             {
-                if (current == null)
-                {
-                    lock(syncObj)
-                    {
-                        if (current == null)
-                        {
-                            current = new MessageBus(new MessageBusImpl());
-                        }
-                    }
-                }
-
-                return current;
+                return instance.Value;
             }
         }
-
 
         private MessageBus(MessageBusImpl messageBusImpl)
         {

@@ -10,9 +10,9 @@ namespace TitiusLabs.Messaging
         {
             return new MessageSubscription<TMessage>
             {
-                Subscriber = new WeakReference<Action<TMessage>>(subscriber),
+                Subscriber = subscriber,
                 Scheduler = scheduler,
-                Filter = new WeakReference<Func<TMessage, bool>>(filter)
+                Filter = filter
             };
         }
 
@@ -21,28 +21,27 @@ namespace TitiusLabs.Messaging
         public TaskScheduler Scheduler { get; set; }
 
         public abstract void Dispatch(IMessage message);
+
         internal abstract MethodInfo GetSubscriberType();
     }
 
-    internal class MessageSubscription<TMessage> : MessageSubscription where TMessage : IMessage
+    internal sealed class MessageSubscription<TMessage> : MessageSubscription where TMessage : IMessage
     {
-        public WeakReference<Action<TMessage>> Subscriber { get; set; }
-        public WeakReference<Func<TMessage, bool>> Filter { get; set; }
+        public Action<TMessage> Subscriber { get; set; }
+        public Func<TMessage, bool> Filter { get; set; }
 
         public override void Dispatch(IMessage message)
         {
-            Filter.TryGetTarget(out var filter);
-
             var typedMessage = (TMessage)message;
-            if ((filter?.Invoke(typedMessage) ?? true) && Subscriber.TryGetTarget(out var subscriber))
+            if ((Filter?.Invoke(typedMessage) ?? true))
             {
-                subscriber.Invoke(typedMessage);
+                Subscriber?.Invoke(typedMessage);
             }
         }
 
         internal override MethodInfo GetSubscriberType()
         {
-            return Subscriber.TryGetTarget(out var target) ? target.Method : null;
+            return Subscriber.Method;
         }
     }
 }

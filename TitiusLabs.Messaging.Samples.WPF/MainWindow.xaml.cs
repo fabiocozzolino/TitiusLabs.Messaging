@@ -28,10 +28,11 @@ namespace TitiusLabs.Messaging.Samples.WPF
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            MessageBus.Current.Subscribe((TimeMessage message) =>
-            {
-                label1.Content = message.Timestamp;
-            });
+            Action<TimeMessage> subscriber = (TimeMessage message) =>
+               {
+                   label1.Content = message.Timestamp;
+               };
+            MessageBus.Current.Subscribe(subscriber);
             MessageBus.Current.Subscribe((TimeMessage message) =>
             {
                 label2.Content = message.Timestamp;
