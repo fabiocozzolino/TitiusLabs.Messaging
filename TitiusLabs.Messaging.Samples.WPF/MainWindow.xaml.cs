@@ -46,7 +46,7 @@ namespace TitiusLabs.Messaging.Samples.WPF
                 while (true)
                 {
                     await Task.Delay(3000);
-                    MessageBus.Current.Post(new TimeMessage
+                    MessageBus.Current.Publish(new TimeMessage
                     {
                         Timestamp = DateTime.Now.ToString()
                     });
@@ -58,7 +58,7 @@ namespace TitiusLabs.Messaging.Samples.WPF
                 while (true)
                 {
                     await Task.Delay(5000);
-                    MessageBus.Current.Post(new TextMessage
+                    MessageBus.Current.Publish(new TextMessage
                     {
                         Text = "Hi, Fabio"
                     });
@@ -70,7 +70,7 @@ namespace TitiusLabs.Messaging.Samples.WPF
                 while (true)
                 {
                     await Task.Delay(8000);
-                    MessageBus.Current.Post(new TimeMessage
+                    MessageBus.Current.Publish(new TimeMessage
                     {
                         Timestamp = "Hi, All"
                     });
